@@ -9,22 +9,6 @@ var router = express.Router();
 const bodyParser = require('body-parser');
 const app = express();
 
-const {
-	SHIPSTATION_API_URL,
-	API_KEY,
-	API_SECRET
-} = process.env;
-
-const getShipDate = ( str, start, end='' ) => {
-	var result = str.match( new RegExp( start + "[0-9]{4}([./-])[0-9]{2}[./-][0-9]{2}" + end ) );
-	var val = '';
-	if ( result && result[0] ) {
-		val = result[0].replace( start, '' );
-	}
-
-	return val;
-}
-
 app.use(bodyParser.raw({type: 'application/json'}));
 app.use(bodyParser.urlencoded({
 	extended: true
@@ -46,8 +30,8 @@ router.post('/shipstation_order_updated', async (req, res) => {
 	
 	const shipStationOrderResult = await axios.get( objHookData.resource_url, {
 		auth: {
-			username: API_KEY,
-			password: API_SECRET
+			username: process.env.API_KEY,
+			password: process.env.API_SECRET
 		}
 	});
 
@@ -60,18 +44,24 @@ router.post('/shipstation_order_updated', async (req, res) => {
 		for ( const order of shipStationOrderResult.data.orders ) {
 			let newShipOrder = order;
 			if ( order.customerNotes ) {
-				let shipDate = getShipDate( order.customerNotes, 'Ship Date: ' );
-				if ( shipDate ) {
-					newShipOrder.advancedOptions.customField1 = shipDate;
-
-					await axios.post( SHIPSTATION_API_URL + '/orders/createorder', newShipOrder, {
-						auth: {
-							username: API_KEY,
-							password: API_SECRET
-						}
-					});
+				// console.log(order.customerNotes, order.orderNumber);
+				let current_customerNotes = order.customerNotes;
+				if ( current_customerNotes ){
+					if ( current_customerNotes.indexOf('gift_message') > 0 ) {
+						// let giftmessage_position = current_customerNotes.indexOf("gift_message");
+						let new_gift_message = current_customerNotes.slice(current_customerNotes.indexOf("gift_message"));
+						newShipOrder.customerNotes = new_gift_message;						
+					}else{
+						newShipOrder.customerNotes = '';
+					}
+					// await axios.post( process.env.SHIPSTATION_API_URL + '/orders/createorder', newShipOrder, {
+					// 	auth: {
+					// 		username: process.env.API_KEY,
+					// 		password: process.env.API_SECRET
+					// 	}
+					// });
 				}
-			}			
+			}
 		}
 	}
 
