@@ -18,6 +18,10 @@ router.get('/', (req, res) => {
 	res.send('Hello World!');
 });
 
+function sleep(ms){
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 router.post('/shipstation_order_updated', async (req, res) => {
 	const hookData = req.body.toString();
 	
@@ -41,25 +45,29 @@ router.post('/shipstation_order_updated', async (req, res) => {
 	}
 
 	if ( shipStationOrderResult.data.orders ) {
-		for ( const order of shipStationOrderResult.data.orders ) {
+		for ( let order of shipStationOrderResult.data.orders ) {			
 			let newShipOrder = order;
 			if ( order.customerNotes ) {
-				// console.log(order.customerNotes, order.orderNumber);
 				let current_customerNotes = order.customerNotes;
+				console.log("current order note is " + current_customerNotes);
 				if ( current_customerNotes ){
-					if ( current_customerNotes.indexOf('gift_message') > 0 ) {
-						// let giftmessage_position = current_customerNotes.indexOf("gift_message");
-						let new_gift_message = current_customerNotes.slice(current_customerNotes.indexOf("gift_message"));
-						newShipOrder.customerNotes = new_gift_message;						
-					}else{
-						newShipOrder.customerNotes = '';
+					if ( current_customerNotes.indexOf('gift_message') !== -1 ) {
+						console.log("yes it has gift message");
+						let new_gift_message = current_customerNotes.slice(current_customerNotes.indexOf("gift_message")+14);
+						newShipOrder.customerNotes = new_gift_message;
+					} else {
+						newShipOrder.customerNotes = ' ';
+						console.log("no gift message");
 					}
-					// await axios.post( process.env.SHIPSTATION_API_URL + '/orders/createorder', newShipOrder, {
-					// 	auth: {
-					// 		username: process.env.API_KEY,
-					// 		password: process.env.API_SECRET
-					// 	}
-					// });
+					await sleep(2000);
+					console.log(newShipOrder.customerNotes);
+					await axios.post( process.env.SHIPSTATION_API_URL + '/orders/createorder', newShipOrder, {
+						auth: {
+							username: process.env.API_KEY,
+							password: process.env.API_SECRET
+						}
+					});	
+					current_customerNotes = '';				
 				}
 			}
 		}
