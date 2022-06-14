@@ -49,20 +49,25 @@ router.post('/shipstation_order_updated', async (req, res) => {
 			let newShipOrder = order;
 			if ( order.customerNotes ) {
 				let current_customerNotes = order.customerNotes;
+				console.log("current order note is " + current_customerNotes);
 				if ( current_customerNotes ){
 					if ( current_customerNotes.indexOf('gift_message') !== -1 ) {
+						console.log("yes it has gift message");
 						let new_gift_message = current_customerNotes.slice(current_customerNotes.indexOf("gift_message")+14);
 						newShipOrder.customerNotes = new_gift_message;
 					} else {
 						newShipOrder.customerNotes = ' ';
+						console.log("no gift message");
 					}
 					await sleep(2000);
+					console.log(newShipOrder.customerNotes);
 					await axios.post( process.env.SHIPSTATION_API_URL + '/orders/createorder', newShipOrder, {
 						auth: {
 							username: process.env.API_KEY,
 							password: process.env.API_SECRET
 						}
-					});
+					});	
+					current_customerNotes = '';				
 				}
 			}
 		}
